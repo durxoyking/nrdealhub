@@ -1,0 +1,127 @@
+"use client";
+
+import Link from "next/link";
+import { addDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ExternalLink, Tag } from "lucide-react";
+import { db, firebaseConfigMissing } from "@/lib/firebase";
+
+type Creative = {
+  id: string;
+  name: string;
+  category: string;
+  affiliateUrl: string;
+  imageUrl: string;
+  width?: string;
+  height?: string;
+  status: "active" | "inactive";
+};
+
+export default function CreativesPage() {
+  const [creatives, setCreatives] = useState<Creative[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (firebaseConfigMissing) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const snapshot = await getDocs(collection(db, "creatives"));
+        const items = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        })) as Creative[];
+
+        setCreatives(items.filter((item) => item.status === "active").reverse());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const openCreative = async (creative: Creative) => {
+    try {
+      if (!firebaseConfigMissing) {
+        await addDoc(collection(db, "affiliateClicks"), {
+          dealTitle: creative.name,
+          dealUrl: creative.affiliateUrl,
+          category: creative.category,
+          creativeId: creative.id,
+          clickedAt: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.error("Creative click tracking failed:", error);
+    }
+
+    window.open(creative.affiliateUrl, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <main className="min-h-screen bg-[#f7fbf8] text-[#14202a]">
+      <header className="border-b border-[#e6eee8] bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-[#2f9632] bg-[#eef8f0] text-[#2f9632]">
+              <Tag size={22} />
+            </div>
+            <h1 className="text-2xl font-black">
+              NR<span className="text-[#2f9632]">DealHub</span>
+            </h1>
+          </Link>
+
+          <Link href="/" className="inline-flex items-center gap-2 font-bold text-[#2f9632]">
+            <ArrowLeft size={18} />
+            Back Home
+          </Link>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-7xl px-4 py-10">
+        <div className="rounded-[2rem] bg-gradient-to-r from-[#0f5f2a] to-[#2f9632] p-8 text-white shadow-xl">
+          <h1 className="text-3xl font-black">Affiliate Creative Banners</h1>
+          <p className="mt-2 opacity-90">Browse active DCM Network creative banners and offers.</p>
+        </div>
+
+        {loading ? (
+          <p className="mt-8 font-bold text-[#2f9632]">Loading creatives...</p>
+        ) : creatives.length === 0 ? (
+          <div className="mt-8 rounded-3xl bg-white p-10 text-center shadow-xl">
+            <h2 className="text-2xl font-black">No active creative found</h2>
+            <p className="mt-2 text-[#5f6b76]">Admin can add creatives from Creative Manager.</p>
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {creatives.map((creative) => (
+              <div key={creative.id} className="rounded-3xl border border-[#e6eee8] bg-white p-5 shadow-[0_20px_50px_rgba(15,95,42,0.08)]">
+                <button onClick={() => openCreative(creative)} className="block w-full overflow-hidden rounded-2xl bg-[#f7fbf8] p-3">
+                  <img src={creative.imageUrl} alt={creative.name} className="mx-auto h-40 w-full rounded-xl object-contain" />
+                </button>
+
+                <div className="mt-5">
+                  <p className="text-sm font-bold text-[#2f9632]">{creative.category}</p>
+                  <h2 className="mt-1 text-lg font-black">{creative.name}</h2>
+                  <p className="mt-1 text-sm text-[#5f6b76]">
+                    Size: {creative.width || "-"} x {creative.height || "-"}
+                  </p>
+
+                  <button
+                    onClick={() => openCreative(creative)}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2f9632] px-5 py-3 font-black text-white transition hover:bg-[#0f5f2a]"
+                  >
+                    Open Offer <ExternalLink size={17} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
