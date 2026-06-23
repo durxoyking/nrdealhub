@@ -2,115 +2,44 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { Eye, EyeOff, Lock, Mail, Tag } from "lucide-react";
-import { auth, firebaseConfigMissing } from "@/lib/firebase";
+import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [name, setName] = useState("");
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (firebaseConfigMissing) {
-      setError("Firebase config missing. Please add your Firebase keys in .env.local file.");
+  function submit() {
+    if (!email) {
+      alert("Email or phone দিন");
       return;
     }
 
-    try {
-      setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err?.message || "Login failed. Please check your email and password.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    localStorage.setItem("nrdealhub_user", JSON.stringify({ email, name: name || "Customer" }));
+    const params = new URLSearchParams(window.location.search);
+    router.push(params.get("redirect") || "/");
+  }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-white via-[#eef8f0] to-white px-4 py-10">
-      <div className="w-full max-w-md rounded-[2rem] border border-[#e6eee8] bg-white p-8 shadow-2xl">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-[#2f9632] bg-[#eef8f0] text-[#2f9632]">
-            <Tag size={22} />
-          </div>
-          <h1 className="text-2xl font-black text-[#14202a]">
-            NR<span className="text-[#2f9632]">DealHub</span>
-          </h1>
-        </Link>
+    <main className="min-h-screen bg-gradient-to-br from-green-50 to-white px-4 py-16 text-slate-950">
+      <div className="mx-auto max-w-md rounded-[32px] bg-white p-8 shadow-xl">
+        <Link href="/" className="text-2xl font-black">NR<span className="text-green-600">DealHub</span></Link>
+        <h1 className="mt-8 text-4xl font-black">{mode === "login" ? "Login" : "Sign Up"}</h1>
+        <p className="mt-2 text-slate-600">Buy/Sell করতে NRDealHub account দরকার। External website login লাগবে না।</p>
 
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-black text-[#14202a]">Welcome Back</h2>
-          <p className="mt-2 text-[#5f6b76]">Login to access your dashboard.</p>
+        <div className="mt-6 grid grid-cols-2 gap-3 rounded-2xl bg-slate-100 p-2">
+          <button onClick={() => setMode("login")} className={`rounded-xl py-3 font-black ${mode === "login" ? "bg-green-600 text-white" : "text-slate-600"}`}>Login</button>
+          <button onClick={() => setMode("signup")} className={`rounded-xl py-3 font-black ${mode === "signup" ? "bg-green-600 text-white" : "text-slate-600"}`}>Sign Up</button>
         </div>
 
-        {error && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        {mode === "signup" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" className="mt-5 w-full rounded-2xl border px-5 py-4 outline-none focus:border-green-600" />}
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email or Phone" className="mt-4 w-full rounded-2xl border px-5 py-4 outline-none focus:border-green-600" />
+        <input placeholder="Password" type="password" className="mt-4 w-full rounded-2xl border px-5 py-4 outline-none focus:border-green-600" />
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="mb-2 block text-sm font-bold text-[#14202a]">Email Address</label>
-            <div className="flex items-center rounded-xl border border-[#e6eee8] bg-[#f7fbf8] px-4">
-              <Mail size={20} className="text-[#2f9632]" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                className="w-full bg-transparent px-3 py-4 outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-bold text-[#14202a]">Password</label>
-            <div className="flex items-center rounded-xl border border-[#e6eee8] bg-[#f7fbf8] px-4">
-              <Lock size={20} className="text-[#2f9632]" />
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full bg-transparent px-3 py-4 outline-none"
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-[#5f6b76]">
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-[#2f9632] px-6 py-4 font-black text-white shadow-lg shadow-green-200 transition hover:bg-[#0f5f2a] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-[#5f6b76]">
-          New user?{" "}
-          <Link href="/register" className="font-bold text-[#2f9632] hover:underline">
-            Create Account
-          </Link>
-        </p>
-
-        <Link href="/" className="mt-5 block text-center text-sm font-bold text-[#14202a] hover:text-[#2f9632]">
-          Back to Home
-        </Link>
+        <button onClick={submit} className="mt-6 w-full rounded-2xl bg-green-600 py-4 font-black text-white">
+          {mode === "login" ? "Login Now" : "Create Account"}
+        </button>
       </div>
     </main>
   );

@@ -357,7 +357,7 @@ export default function CreativeManagerPage() {
                   value={htmlCode}
                   onChange={(event) => setHtmlCode(event.target.value)}
                   className="min-h-56 w-full rounded-xl border border-[#e6eee8] bg-[#f7fbf8] px-4 py-4 font-mono text-sm outline-none focus:border-[#2f9632]"
-                  placeholder='<a href="https://go.urtrackinglink.com/aff_c?..." target="_blank"><img src="https://media.go2speed.org/..." /></a>'
+                  placeholder='<a href="/" target="_blank"><img src="https://media.go2speed.org/..." /></a>'
                 />
               </div>
 

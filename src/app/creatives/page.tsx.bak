@@ -59,6 +59,7 @@ export default function CreativesPage() {
       console.error("Creative click tracking failed:", error);
     }
 
+    window.location.href = `/product/${product.id}`;
   };
 
   return (
